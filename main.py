@@ -11,18 +11,10 @@ import torch.optim as optim
 os.chdir("/mnt/home/seguraab/Shiu_Lab/Collabs/Multi_Omic/multi-omics/GCN")
 import simple_GCN
 
-def cosine_distance_torch(x1, x2=None, eps=1e-8):
-    x2 = x1 if x2 is None else x2
-    w1 = x1.norm(p=2, dim=1, keepdim=True)
-    w2 = w1 if x2 is x1 else x2.norm(p=2, dim=1, keepdim=True)
-    return 1 - torch.mm(x1, x2.t()) / (w1 * w2.t()).clamp(min=eps)
-
 def main():
 
     geno_sub, X_train, train_loader, test_loader, test_tensor = simple_GCN.split_data()
 
-    adj_mat = cosine_distance_torch(X_train) # compute adjacency matrix
-    
     # Define the network
     net = simple_GCN.GCN(in_channels = X_train.size()[0], out_channels = [X_train.size()[1], 500, X_train.size()[0]])
     #net = net.to(device="cuda:0")
