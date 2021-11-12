@@ -40,6 +40,8 @@ Success in our project would be defined by the level of improvement in training 
 The dataset we are using was previously published by [Alonso-Blanco *et al.* 2016](https://doi.org/10.1016/j.cell.2016.05.063). The original dataset contains a full VCF genomic variant file that combines all 1,135 *Arabidopsis thaliana* accessions, however we will be using a subset of 383 accessions. The data is freely available at http://1001genomes.org/data/GMI-MPI/releases/v3.1.
 
 # References:
+Alonso-Blanco, C., Andrade, J., Becker, C., Bemm, F., Bergelson, J., Borgwardt, K. M., ... & Zhou, X. (2016). 1,135 genomes reveal the global pattern of polymorphism in Arabidopsis thaliana. Cell, 166(2), 481-491.
+
 CPU threading and TorchScript inference¶. CPU threading and TorchScript inference - PyTorch 1.10.0 documentation. (n.d.). Retrieved October 29, 2021, from https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html. 
 
 Optional: Data parallelism¶. Optional: Data Parallelism - PyTorch Tutorials 1.10.0+cu102 documentation. (n.d.). Retrieved October 29, 2021, from https://pytorch.org/tutorials/beginner/blitz/data_parallel_tutorial.html. 
