@@ -1,3 +1,4 @@
+# https://github.com/praxidike97/GraphNeuralNet/blob/master/main.py
 from torch_geometric.datasets import Planetoid
 import torch
 import torch.nn.functional as F
