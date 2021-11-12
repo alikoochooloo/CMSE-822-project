@@ -35,6 +35,10 @@ Our reference to benchmark against would be the time it takes to run our machine
 
 Success in our project would be defined by the level of improvement in training efficiency of the machine learning model through the implementation of Data Parallelism or Inter-op Parallelism. When PyTorch runs a sequence of operations on the specified device, it calls a subprogram (i.e., kernel) for each operation. Thus, each kernel reads, performs the calculation, and writes from the device memory, which increases latency. By parallelizing the input data or the operations, we expect that the model training time would not be decreased linearly as the amount of overhead is rather large, but there will be improvement in the training time since the read, calculation, and write operations will be done at once. 
 
+# Dataset
+
+The dataset we are using was previously published by [Alonso-Blanco *et al.* 2016](https://doi.org/10.1016/j.cell.2016.05.063). The original dataset contains a full VCF genomic variant file that combines all 1,135 *Arabidopsis thaliana* accessions, however we will be using a subset of 383 accessions. The data is freely available at http://1001genomes.org/data/GMI-MPI/releases/v3.1.
+
 # References:
 CPU threading and TorchScript inference¶. CPU threading and TorchScript inference - PyTorch 1.10.0 documentation. (n.d.). Retrieved October 29, 2021, from https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html. 
 
