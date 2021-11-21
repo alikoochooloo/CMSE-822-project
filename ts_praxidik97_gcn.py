@@ -160,14 +160,5 @@ if __name__ == "__main__":
     traced_script_module.save("traced_praxidike97_gcn.pt")
     """ End """
 
-    """ Convert model to TorchScript via annotation """
-    # Use torch.jit.script to generate a torch.jit.ScriptModule via scripting
-    mod = Net()
-    scripted_script_module = torch.jit.script(mod, (x, edge_index))
-    
-    # Save the scripted TorchScript model to a file
-    scripted_script_module.save("scripted_praxidike97_gcn.pt")
-    """ End """
-
     # Train the model
     train(data, rank='cuda:1')
