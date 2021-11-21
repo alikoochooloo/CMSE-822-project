@@ -1,15 +1,35 @@
-#!~/miniconda3/envs/torch-env/bin/python
-# https://github.com/praxidike97/GraphNeuralNet/blob/master/main.py
-# To run on command line:
-# CUDA_VISIBLE_DEVICES=0,1 CUDA_LAUNCH_BLOCKING=1 python praxidike97_gcn.py 
-# python -m torch.distributed.run praxidike97_gcn.py
-# GLOO_SOCKET_IFNAME=eno2 python -m torch.distributed.launch praxidike97_gcn.py
-# python -m torch.distributed.launch --nproc_per_node=2 --nnode=2 --node_rank=0 praxidike97_gcn.py
-# Check running processes: ps -elf | grep python
-# Note: cannot run on slurm since can't activate conda environment
+#!/opt/software/Python/3.6.4-foss-2018a/bin/python
+"""
+ https://github.com/praxidike97/GraphNeuralNet/blob/master/main.py
+
+To run on command line (no DDP):
+python praxidike97_gcn.py
+
+If CUDA errors try (no DDP):
+    CUDA_VISIBLE_DEVICES=1,2 CUDA_LAUNCH_BLOCKING=1 python praxidike97_gcn.py 
+
+With Distributed Parallel:
+    python -m torch.distributed.run praxidike97_gcn.py
+    CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.run praxidike97_gcn.py
+    python -m torch.distributed.launch --nproc_per_node=2 --nnode=2 --node_rank=0 praxidike97_gcn.py
+
+With OpenMP on different GPUs (0,1,2,3) or with different number of threads: 
+    # source: https://github.com/pytorch/pytorch/issues/3146
+    GOMP_CPU_AFFINITY="0" OMP_NUM_THREADS=1 python praxidike97_gcn.py
+    OMP_NUM_THREADS=1 taskset -c 0 python praxidike97_gcn.py
+
+With MPI backend:
+    RuntimeError: Distributed package doesn't have MPI built in. MPI is only 
+    included if you build PyTorch from source on a host that has MPI installed.
+    # source: https://pytorch.org/tutorials/intermediate/dist_tuto.html
+    mpirun -n 2 python myscript.py
+
+Check running processes: ps -elf | grep python
+"""
 
 from torch_geometric.datasets import Planetoid
 import torch
+import torchvision
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
@@ -27,18 +47,23 @@ from torch.distributed.elastic.multiprocessing.errors import record
 @record
 
 class Net(torch.nn.Module):
-    def __init__(self, dataset):
-        super().__init__() #Net, self
+    def __init__(self, dataset, dev0, dev1):
+        super().__init__()
+        self.dev0 = dev0
+        self.dev1 = dev1
         self.conv1 = GCNConv(dataset.num_node_features, 16)
         self.conv2 = GCNConv(16, dataset.num_classes)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
+        x = x.to(self.dev0)
+        edge_index = edge_index.to(self.dev0)
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
+        x = x.to(self.dev1)
+        edge_index = edge_index.to(self.dev1)
         x = self.conv2(x, edge_index)
-
         return F.log_softmax(x, dim=1)
 
 
@@ -59,6 +84,7 @@ def plot_dataset(dataset):
     plt.show()
 
 def test(model, data, train=True):
+    data = data.to('cuda:1')
     model.eval()
 
     correct = 0
@@ -71,36 +97,28 @@ def test(model, data, train=True):
         correct += pred[data.test_mask].eq(data.y[data.test_mask]).sum().item()
         return correct / (len(data.y[data.test_mask]))
 
-def train(rank, world_size):
+def train(rank, world_size): 
     torch.cuda.empty_cache()
     print("GPUs", torch.cuda.device_count())
-    print("GLOO", os.environ.get('GLOO_SOCKET_IFNAME'))
     print("I am processor rank", rank)
-    #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # check device
-    #print(device)
-    t = torch.cuda.get_device_properties(0).total_memory
-    r = torch.cuda.memory_reserved(0)
-    a = torch.cuda.memory_allocated(0)
-    f = r-a  # free inside reserved
-    print(t, r, a, f)
 
     # dataset
     plot=False
     dataset = Planetoid(root='/tmp/Cora', name='Cora')
-    #data_loader = DataLoader(dataset=dataset, batch_size = 30, shuffle=True, num_workers=4, pin_memory=False)
-    data = dataset[0].to(rank)
+    data = dataset[0]
+    data_loader = DataLoader(dataset=dataset, batch_size = 30, shuffle=True, num_workers=0, pin_memory=False)
 
     # create default process group
-    dist.init_process_group(backend="nccl")#rank=rank and world_size=world_size are automatically set
+    dist.init_process_group(backend="mpi", rank=rank, world_size=world_size)
 
     # create local model
-    model = Net(dataset).to(rank)
-    
+    dev0 = (rank * 2) % world_size
+    dev1 = (rank * 2 + 1) % world_size
+    print('dev0', dev0, 'dev1', dev1)
+    model = Net(dataset, dev0, dev1).to(rank)
+
     # construct distributed data parallel model
-    ddp_model = DDP(model, device_ids=[rank])
-    #if torch.cuda.device_count() > 1: 
-    #    model = torch.nn.Distributed  DataParallel(model) # Data parallelism model wrapper
-    #model.cuda(device) # send to gpu
+    ddp_model = DDP(model, device_ids=[rank])#, output_device=dev1)
 
     # define optimizer
     optimizer = torch.optim.Adam(ddp_model.parameters(), lr=0.01, weight_decay=5e-4)
@@ -108,21 +126,21 @@ def train(rank, world_size):
     train_accuracies, test_accuracies = list(), list()
     start = time.time()
     for epoch in range(100):
-        #for data in data_loader:
-        input = data.to(rank)
-        ddp_model.train()
-        optimizer.zero_grad()
-        out = ddp_model(input) # forward pass
-        loss = F.nll_loss(out[data.train_mask], data.y[data.train_mask])
-        loss.backward() # backward pass
-        optimizer.step() # update parameters
+        for data in data_loader:
+            input = data.to(rank)
+            ddp_model.train()
+            optimizer.zero_grad()
+            out = ddp_model(input) # forward pass
+            loss = F.nll_loss(out[data.train_mask], data.y[data.train_mask])
+            loss.backward() # backward pass
+            optimizer.step() # update parameters
 
-        train_acc = test(ddp_model, data) # training accuracy
-        test_acc = test(ddp_model, data, train=False) # testing accuracy
+            train_acc = test(ddp_model, data.to(dev1)) # training accuracy
+            test_acc = test(ddp_model, data.to(dev1), train=False) # testing accuracy
 
-        train_accuracies.append(train_acc)
-        test_accuracies.append(test_acc)
-        print('Epoch: {:03d}, Loss: {:.5f}, Train Acc: {:.5f}, Test Acc: {:.5f}'.
+            train_accuracies.append(train_acc)
+            test_accuracies.append(test_acc)
+            print('Epoch: {:03d}, Loss: {:.5f}, Train Acc: {:.5f}, Test Acc: {:.5f}'.
               format(epoch, loss, train_acc, test_acc))
     end = time.time()
     print("Elapsed time: ", end-start)
@@ -135,15 +153,18 @@ def train(rank, world_size):
         plt.legend(loc='upper right')
         plt.savefig("AUC_praxidike97.png")
 
+    dist.destroy_process_group() # clean up
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
+
     #for name, param in model.named_parameters():
     #    print("name", name, param.device)
 
     # Train the model
     world_size = 2
-    mp.spawn(train, args=(world_size,),nprocs=world_size, join=True)
+    mp.spawn(train, args=(world_size,), nprocs=world_size, join=True)
+    #train(rank)
 
 '''
 class GCNConv(MessagePassing):

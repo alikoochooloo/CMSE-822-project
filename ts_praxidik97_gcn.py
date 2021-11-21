@@ -11,18 +11,18 @@ python praxidike97_gcn.py
 import torch
 import torchvision
 import torch.nn.functional as F
-from torch_geometric.nn import MessagePassing
-from torch_geometric.utils import add_self_loops, degree
+#from torch_geometric.nn import MessagePassing
+#from torch_geometric.utils import add_self_loops, degree
 import networkx as nx
+from torch_geometric.nn import GCNConv
 from torch_geometric.datasets import Planetoid
 import numpy as np
 import os
 import time
 import matplotlib.pyplot as plt
 
-
-
-class GCNConv(MessagePassing): #
+"""
+class GCNConv(MessagePassing):
     def __init__(self, in_channels, out_channels):
         super(GCNConv, self).__init__(aggr='add')  #,  "Add" aggregation
         self.lin = torch.nn.Linear(in_channels, out_channels)
@@ -46,6 +46,7 @@ class GCNConv(MessagePassing): #
     def message(self, x_j, norm):
         # Normalize node features.
         return norm.view(-1, 1) * x_j
+"""
 
 class Net(torch.nn.Module):
     def __init__(self):
@@ -151,22 +152,13 @@ if __name__ == "__main__":
     # Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
     mod = Net()
     mod.eval()
-    traced_script_module = torch.jit.trace(mod(x, edge_index))
+    traced_script_module = torch.jit.trace(mod, (x, edge_index))
 
     # See TorchScript code
     print(traced_script_module.code)
 
     # Save the traced TorchScript model to a file
     traced_script_module.save("traced_praxidike97_gcn.pt")
-    """ End """
-
-    """ Convert model to TorchScript via annotation """
-    # Use torch.jit.script to generate a torch.jit.ScriptModule via scripting
-    mod = Net()
-    scripted_script_module = torch.jit.script(mod, (x, edge_index))
-    
-    # Save the scripted TorchScript model to a file
-    scripted_script_module.save("scripted_praxidike97_gcn.pt")
     """ End """
 
     # Train the model
