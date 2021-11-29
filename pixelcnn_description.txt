@@ -1,0 +1,7 @@
+Pixel cnn is an algorithms that given a few rows of information on a picture it can fill the rest with a convoluting kernel. In a real implementation it can learn the context of a picture and accurately fill a picture. for example given a cropped of a dog with only the head showing, Pixelcnn can fill the rest and draw a body and legs.
+
+Here we only do a basic implementation. It is only for the purposes of shiwing how it can be parallelized. given a matrix with height of h, width of w, and kernel size of k, we will fill the first few rows with non-zero numbers. we will pass a kernel over the image to calculate the values of the node in the middle of the kernel. But we put a mask on our kernel and only use the value above our node and directly to it's left.
+
+Strat 1 for parallelism is parallelizing the different calculations we do over only one kernel. for example if we have 4 nodes that we can use in our masked kernel we will start 4 different processes to do that. One they are done we will get the results and sum the up to put in the middle node of the kernel.
+
+Strat 2 is to parallelize over the rows of the matrix. once a node on row r is calculated we can start calculating row r+1 with a delay of int(k/2)+1. For example if we have k=3, matrix[2][1] is the right most element inside the kernel for the element matrix[3][0] so we can use it and start a new row. (more explanation may be needed along with an image of how it works.
