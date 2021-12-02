@@ -13,7 +13,7 @@ With Distributed Parallel:
     CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.run praxidike97_gcn.py
     python -m torch.distributed.launch --nproc_per_node=2 --nnode=2 --node_rank=0 praxidike97_gcn.py
 
-With OpenMP on different GPUs (0,1,2,3) or with different number of threads: 
+With OpenMP on different GPUs (0,1,2,3) or with different number of threads (no DDP): 
     # source: https://github.com/pytorch/pytorch/issues/3146
     GOMP_CPU_AFFINITY="0" OMP_NUM_THREADS=1 python praxidike97_gcn.py
     OMP_NUM_THREADS=1 taskset -c 0 python praxidike97_gcn.py
@@ -25,6 +25,7 @@ With MPI backend:
     mpirun -n 2 python myscript.py
 
 Check running processes: ps -elf | grep python
+https://www.programcreek.com/python/example/119794/torch.nn.parallel.DistributedDataParallel
 """
 
 from torch_geometric.datasets import Planetoid
@@ -118,7 +119,7 @@ def train(rank, world_size):
     model = Net(dataset, dev0, dev1).to(rank)
 
     # construct distributed data parallel model
-    ddp_model = DDP(model, device_ids=[rank])#, output_device=dev1)
+    ddp_model = DDP(model, device_ids=[rank], output_device=rank)
 
     # define optimizer
     optimizer = torch.optim.Adam(ddp_model.parameters(), lr=0.01, weight_decay=5e-4)
@@ -157,14 +158,10 @@ def train(rank, world_size):
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
-
-    #for name, param in model.named_parameters():
-    #    print("name", name, param.device)
-
     # Train the model
     world_size = 2
     mp.spawn(train, args=(world_size,), nprocs=world_size, join=True)
-    #train(rank)
+
 
 '''
 class GCNConv(MessagePassing):
