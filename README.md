@@ -10,6 +10,7 @@ Determining how genotype is connected to phenotype is a grand challenge in biolo
 # Parallelization Strategies:
 
 _Data Parallelism_
+
 The genomic prediction model we are using has 2 graph convolutional layers with a ReLU activation layer following each of them. None of the layers are easily parallelizable as it would require us to fully redesign each layer to apply threading to the weight multiplications. However Pytorch has a tool available called DataParallel that can be used as follows:
 
 ```
@@ -21,6 +22,7 @@ model = torch.nn.DataParallel(model, device_ids)
 DataParallel takes in a model and applies parallelism by replicating the given model and splitting the input training data, with a specific batch size, across multiple devices (GPUs & CPUs). When passing a batch of inputs (equal to or more than the number of cores available) the model will segment the batch and pass approximately the same number of samples to each core. We will build and test the GCN model in the HPCC and use a different number of device cores to benchmark how the training time will improve and if the model performance is affected.
 
 _Inter-op parallelism: CPU Threading_
+
 Alternatively the model can be modified to include asynchronous sections that can run concurrently and be joined together later for the output layer. We will use TorchScript, which is an intermediate representation of PyTorch models to allow them to be run in a high-performance environment such as C++ and compiled using the PyTorch JIT compiler. This tool allows us to overcome Python’s GIL and improve model runtime. 
 
 In which case we can use a forking tool available through TorchScript called torch.jit.fork. This operator can split several operations of the model to multiple threads and create a future object that can be used to call for a thread join.
@@ -42,6 +44,9 @@ Success in our project would be defined by the level of improvement in training 
 The dataset we are using to predict flowering time using the GCN was previously published by [Alonso-Blanco *et al.* 2016](https://doi.org/10.1016/j.cell.2016.05.063). The original dataset contains a full VCF genomic variant file that combines all 1,135 *Arabidopsis thaliana* accessions, however we will be using a subset of 383 accessions. The data is freely available at http://1001genomes.org/data/GMI-MPI/releases/v3.1.
 
 A secondary dataset we are using to develop the GCN is the PyTorch Geometric [Planetoid](https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.Planetoid) dataset, which has the correct data structures and format to run on PyTorch models
+
+# Description of code:
+- praxidike97_gcn.py: GCN 
 
 # Challenges in Troubleshooting the GCN:
 __PyTorch DataParallel:__
@@ -127,6 +132,8 @@ PyTorch supports intra-op parallelism (parallelization within an operation) with
 |6	|1.03312|-|4  |2  |__0.98101__|
 |7	|3.73669|-|4  |3  |1.06247|
 |   |       |-|4  |4  |1.15296|
+
+
 When we did not set the OMP_NUM_THREADS variable, model training took 1.34716 seconds. Overall, we see an optimal training speed up using 3-4 threads on one device. If too many threads are used, oversubscription causes an increase in training time due to conflicts over access to shared data in the device memory. 
 
 # References:
