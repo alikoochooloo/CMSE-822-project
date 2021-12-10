@@ -6,7 +6,7 @@ layer source: https://github.com/dizhu-gis/SRGCNN/blob/main/SRGCNN_demo.ipynb
 Adjacency matrix source: https://github.com/txWang/MOGONET
 
 To run on command line if CUDA error (device-side assert triggered): 
-    CUDA_LAUNCH_BLOCKING=1 python multi-omics/GCN/praxidike97_gcn_regression.py 
+    CUDA_LAUNCH_BLOCKING=1 python praxidike97_gcn_regression.py 
 
 Data used:
     Planetoid: 
@@ -32,7 +32,7 @@ import time
 import pandas as pd
 import datatable as dt
 
-# Graph Convolutional layer
+# Graph Convolutional layer for classification
 class GCNConv(MessagePassing):
     def __init__(self, in_channels, out_channels):
         super(GCNConv, self).__init__(aggr='add')  # "Add" aggregation
