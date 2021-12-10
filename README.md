@@ -46,7 +46,14 @@ The dataset we are using to predict flowering time using the GCN was previously 
 A secondary dataset we are using to develop the GCN is the PyTorch Geometric [Planetoid](https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.Planetoid) dataset, which has the correct data structures and format to run on PyTorch models
 
 # Description of code:
-- praxidike97_gcn.py: GCN 
+- praxidike97_gcn.py: GCN for classification using Distributed Data Parallel
+- praxidike97_gcn_dp.py: GCN for classification using DataParallel
+- praxidike97_gcn_original.py: GCN for classification NO PARALLELIZATION
+- praxidike97_gcn_regression.py: GCN for regression (genotype data) NO PARALLELIZATION >> this code only worked on planetoid data
+- ts_praxidike97_gcn_original.py: Code to trace GCN for classification into TorchScript
+- traced_praxidike97_gcn_original.pt: Traced TorchScript model of GCN for classification
+- example_ddp.py: Distributed Data Parallel example
+- example_dp.py: DataParallel example
 
 # Challenges in Troubleshooting the GCN:
 __PyTorch DataParallel:__
