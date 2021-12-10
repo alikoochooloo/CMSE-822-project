@@ -12,6 +12,7 @@ With Distributed Parallel:
     python -m torch.distributed.run praxidike97_gcn.py
     CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.run praxidike97_gcn.py
     python -m torch.distributed.launch --nproc_per_node=2 --nnode=2 --node_rank=0 praxidike97_gcn.py
+    NCCL_ASYNC_ERROR_HANDLING=1 CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=1,2,3,4 python -m torch.distributed.run praxidike97_gcn.py
 
 With OpenMP on different GPUs (0,1,2,3) or with different number of threads (no DDP): 
     # source: https://github.com/pytorch/pytorch/issues/3146
@@ -110,7 +111,7 @@ def train(rank, world_size):
     data_loader = DataLoader(dataset=dataset, batch_size = 30, shuffle=True, num_workers=0, pin_memory=False)
 
     # create default process group
-    dist.init_process_group(backend="mpi", rank=rank, world_size=world_size)
+    dist.init_process_group(backend="nccl") #, rank=rank, world_size=world_size)
 
     # create local model
     dev0 = (rank * 2) % world_size
@@ -152,7 +153,7 @@ def train(rank, world_size):
         plt.xlabel("# Epoch")
         plt.ylabel("Accuracy")
         plt.legend(loc='upper right')
-        plt.savefig("AUC_praxidike97.png")
+        plt.savefig("AUC_praxidike97_gcn_ddp.png")
 
     dist.destroy_process_group() # clean up
 
