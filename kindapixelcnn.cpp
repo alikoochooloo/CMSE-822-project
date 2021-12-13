@@ -3,6 +3,7 @@
 #include <thread>
 #include <string>
 #include <chrono>
+#include <unistd.h>
 
 // finds elements that we need to calculate one node. stores in two vectors. one for the i positions one for j positions for example for kernel = 3, if center of the kernel is [2,2] this function will fill i positions with [1,1,1], and j positions with [1,2,3]
 void findElements(int centeri, int centerj, int k, int maxw, std::vector<long double>& ei, std::vector<long double>& ej){
@@ -90,7 +91,25 @@ int main(int argc, char* argv[]){
 				return 1;
 			}
 		}
+		// check if argument for matrix height and width is given
+		else if(arg=="-hw"){
+			if(argc>=i+1){
+				try{
+					height=std::stoull(argv[i+1]);
+					width=std::stoull(argv[i+1]);
+				}catch(std::invalid_argument){
+					std::cerr << "Unable to interpret '" << argv[i+1] << "' as an integer" << std::endl;
+					return 1;
+				}
+				i++;
+			}
+			else{
+				std::cerr << "Missing value for matrix height and width after '-hw'" << std::endl;
+				return 1;
+			}
+		}
 	}
+	
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -116,15 +135,23 @@ int main(int argc, char* argv[]){
             
             // iterate over nodes that we need to calculate our current node
             for (int e = 0; e < ei.size(); e++){
-                sum += matrix[ei[e]][ej[e]]*0.5+2;
+				usleep(1);
+				/*long long a = 0;
+				int d = 0;
+				while (d<50){
+					a += matrix[ei[e]][ej[e]]*0.5+2;
+					d++;
+				}*/
+				//std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				sum += matrix[ei[e]][ej[e]]*0.5+2;
             }
             matrix[i][j] = sum;
         }
     }
 
     auto finish = std::chrono::high_resolution_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(finish-start).count() / 1000000000.0<< "s\n";
-    // std::cout<<matrix[9][9];
+    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(finish-start).count() / 1000000000.0<< " " << kernel << " " << width << "\n";
+    //std::cout<<matrix[9][9]<<std::endl;
 /*
     for (int i = 0; i < height; i++)
     {
