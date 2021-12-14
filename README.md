@@ -21,7 +21,7 @@ model = torch.nn.DataParallel(model, device_ids)
 
 DataParallel takes in a model and applies parallelism by replicating the given model and splitting the input training data, with a specific batch size, across multiple devices (GPUs & CPUs). When passing a batch of inputs (equal to or more than the number of cores available) the model will segment the batch and pass approximately the same number of samples to each core. We will build and test the GCN model in the HPCC and use a different number of device cores to benchmark how the training time will improve and if the model performance is affected.
 
-_Inter-op parallelism: CPU Threading_
+_Inter-op parallelism & CPU Threading_
 
 Alternatively the model can be modified to include asynchronous sections that can run concurrently and be joined together later for the output layer. We will use TorchScript, which is an intermediate representation of PyTorch models to allow them to be run in a high-performance environment such as C++ and compiled using the PyTorch JIT compiler. This tool allows us to overcome Python’s GIL and improve model runtime. 
 
