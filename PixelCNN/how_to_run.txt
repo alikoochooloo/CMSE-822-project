@@ -1,0 +1,7 @@
+Running pixelcnn.cpp and pixelcnn_with_delay.cpp is like a normal c++ code.
+
+Running st1_pixelcnn.cpp, st1_pixelcnn_with_delay.cpp, st2_barrier_apixelcnn.cpp, and st2_rowthreads_pixelcnn.cpp will require you to produce the output file using the "g++ -fopenmp file_name" command.
+
+To run one code for multiple times and get an average run time runner.py code. 
+In runner.py you can configure to run the code with different kernel and matrix sizes.
+you also need to make sure you are running the correct c++ output file.
