@@ -1,19 +1,23 @@
 import os
 import subprocess
 
+# set the values for size of kernel and size of matrix
 k = [23,33]
 hw = [150]
+
+#iterate over kernel size and matrix size
 for i in k:
 	for j in hw:
-		sum = 0;
+		sum = 0
+		# delete the previous version of out.txt
 		os.remove("out.txt")
 		print("for kernel",i,"width",j)
+
+		# run the code 4 times and store the value in out.txt
 		for n in range(4):
-			#print("run", n)
 			os.system(f'./st1.o -k {i} -hw {j} >> out.txt')
-			#proc = subprocess.Popen(['/saffarym/Desktop/822/project',f'./normal.o -k {i} -hw {j}'])
-			#(out,err) = proc.communicate()
-			#print(out)
+			
+		# open out.txt to get the values, take average, and print out
 		f = open("out.txt")
 		fl = f.readlines()
 		for line in fl:
